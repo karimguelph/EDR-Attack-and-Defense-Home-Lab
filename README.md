@@ -432,11 +432,23 @@ We can use this resource (findevil - know normal) or or https://lolbas-project.g
 
 ![image](https://github.com/user-attachments/assets/c5341d38-2bcb-408f-b923-a0aa4ebf4647)
 
+![image](https://github.com/user-attachments/assets/34e8aeea-a01b-41ba-8431-673000419ac8)
+
+
 
 
 ### Timeline Tab
 - Filtered logs by known Indicators of Compromise (IOCs) like the implant name and C2 IP.
 - Tracked events such as `SENSITIVE_PROCESS_ACCESS` when enumerating privileges earlier.
+
+![image](https://github.com/user-attachments/assets/69ffc14b-005c-407c-997a-1937f30a08a3)
+
+Filtering with our known IOC (indicators of compromise) like the name of our implant or the known C2 IP address
+
+![image](https://github.com/user-attachments/assets/aa574ba5-3ecd-4117-930d-4d3da4bad1ba)
+
+Found the moment of when our implant was created on the windows victim VM system, and the network connections it created shortly after.
+
 
 ---
 
@@ -468,11 +480,22 @@ One of the most common adversarial techniques involves dumping the `lsass.exe` p
    ```
 2. This dumped the process memory and saved it as `lsass.dmp` on the Sliver C2 server.
 
-Although I didn’t process the dump further, the activity itself generated telemetry that I could analyze in the EDR. This technique is an excellent test for any EDR's ability to detect credential dumping attempts.
+![image](https://github.com/user-attachments/assets/e83146af-e45a-47af-98c1-2930287cd07c)
 
 ### Troubleshooting
 - If the command failed (e.g., RPC error), I confirmed the implant was running with admin rights.
 - Even a failed attempt can generate valuable telemetry for detection, which is what happened to me.
+
+
+Although I didn’t process the dump further, the activity itself generated telemetry that I could analyze in the EDR. This technique is an excellent test for any EDR's ability to detect credential dumping attempts.
+
+I tried different commands here too:
+
+![image](https://github.com/user-attachments/assets/7a623b5e-f298-42d9-a88e-5aad47bb5e2b)
+
+![image](https://github.com/user-attachments/assets/d6398e0c-7b48-45af-830a-4f4fc89fe25d)
+
+
 
 ---
 
@@ -486,15 +509,18 @@ Switching to LimaCharlie, I began searching for telemetry related to the LSASS d
 2. Filtered events by type: `SENSITIVE_PROCESS_ACCESS`.
 3. Scanned the results for any events involving `lsass.exe`. Since LSASS is rarely accessed legitimately, any such event was a strong indicator of malicious activity.
 
+![image](https://github.com/user-attachments/assets/2b9e02e0-e586-480a-83e2-93a472f48ab7)
+
+
+
+
 ## Creating a Detection Rule
 
 With the telemetry in hand, I moved to the D&R (Detection and Response) engine in LimaCharlie to create a rule:
 
-### Detection Logic
+### Detection and Response Action
 
-### Response Action
-
-1. In the **Respond** section, I added:
+1. I added my detection logic and in the **Respond** section, I added:
    ```yaml
    - action: report
      name: LSASS access
@@ -506,6 +532,8 @@ With the telemetry in hand, I moved to the D&R (Detection and Response) engine i
 1. Used the "Target Event" feature to test the rule against the telemetry.
 2. Confirmed a successful match, with the engine highlighting the exact event details.
 3. Saved the rule as "LSASS access" and enabled it.
+
+![image](https://github.com/user-attachments/assets/22d9bb66-fb71-40d5-ab9e-4dea0caf6a7a)
 
 ---
 
@@ -524,6 +552,8 @@ Back in LimaCharlie:
 3. Expanded the detection to view the raw event data, which displayed the title of the detection rule I created.
 4. Verified that it worked and detected the event automatically by navigating to the exact timeline event using the "View Event Timeline" option.
 
+![image](https://github.com/user-attachments/assets/a7ff2df9-ac87-4ea6-94e5-070697b6a896)
+
 ---
 
 ### Configuring the Detection Output
@@ -532,6 +562,11 @@ To ensure I am notified whenever the detection rule is triggered, I took it a st
 
 1. Generated a unique webhook URL using [`https://webhook.site/`](https://webhook.site/).
 2. Configured the detection rule in LimaCharlie to send its output to the generated webhook.
+
+![image](https://github.com/user-attachments/assets/49c666b1-a415-49ab-8a1e-41c7500ee0c4)
+
+![image](https://github.com/user-attachments/assets/96f6b91c-2141-400d-9ac8-f1e5081bcc01)
+
 
 ---
 
