@@ -572,8 +572,11 @@ To ensure I am notified whenever the detection rule is triggered, I took it a st
 
 ## References
 - Eric Capuano’s Guide: [So You Want to Be a SOC Analyst?](https://blog.ecapuano.com/p/so-you-want-to-be-a-soc-analyst-intro)
-- [Sliver C2 Documentation](https://github.com/BishopFox/sliver)
-- [LimaCharlie Documentation](https://limacharlie.io/)
+- [Sliver C2 Documentation](https://sliver.sh/docs)
+- [LimaCharlie Documentation](https://docs.limacharlie.io/)
+- [LOLBAS (Living Off the Land Binaries and Scripts) Project](https://lolbas-project.github.io/)
+- [FindEvil - Know Normal](https://findevil.com/)
+- [EchoTrail Documentation](https://echotrail.io/)
 
 ---
 
