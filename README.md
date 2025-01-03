@@ -577,7 +577,3 @@ To ensure I am notified whenever the detection rule is triggered, I took it a st
 - [LOLBAS (Living Off the Land Binaries and Scripts) Project](https://lolbas-project.github.io/)
 - [FindEvil - Know Normal](https://findevil.com/)
 - [EchoTrail Documentation](https://echotrail.io/)
-
----
-
-Feel free to explore this repository and try the steps yourself! This was an incredibly rewarding project, and I’d love to hear your thoughts or answer any questions!
