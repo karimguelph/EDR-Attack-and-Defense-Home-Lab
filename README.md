@@ -261,8 +261,19 @@ installed mingw-w64 for additional capabilities:
 
 ![image](https://github.com/user-attachments/assets/b76eda73-ef23-4898-92e7-d5728313a005)
 
+Launching sliver c2:
+
+![image](https://github.com/user-attachments/assets/714ddbcd-388d-49e0-a18c-d9f27d83287d)
+
+Generating my first C2 session payload (within the Sliver shell above). using my Linux VM’s IP address that I statically set
+
+![image](https://github.com/user-attachments/assets/b41c00e8-f096-4b12-ad5f-6e8e036fcfc2)
+
 
 This created a unique payload file, which I noted for future reference. The `implants` command within Sliver confirmed the configuration of my new payload:
+
+![image](https://github.com/user-attachments/assets/31cb3fe2-d898-4f42-9541-9197da402b38)
+
 
 ```bash
 implants
