@@ -1,8 +1,6 @@
 # EDR Attack and Defense Home Lab 
 Endpoint Security and Threat Simulation Using Sliver C2 for threat simulation and LimaCharlie for EDR
 
-# EDR Attack and Defense Home Lab
-
 ## Overview
 This project is designed to simulate real-world cybersecurity scenarios, focusing on both attack and defense. I set up a home lab using virtual machines to simulate a Ubuntu attacker (using Sliver C2) and a Windows VM victim (protected by LimaCharlie EDR). The goal was to understand endpoint security, threat detection, and incident response in a controlled environment.
 
